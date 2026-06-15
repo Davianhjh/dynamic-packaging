@@ -4,11 +4,11 @@
 
 ## Phase 0 · 基础设施与契约
 
-- [ ] 建立 monorepo 骨架（pnpm workspaces：`apps/*`、`packages/*`；`server/` 独立 Python 项目）。
-- [ ] 放入共享契约 `packages/contract/packing-contract.ts` 与 `server/app/contract/packing_contract.py`。
-- [ ] `docker-compose.yml` 起 postgres / redis / minio。
-- [ ] 后端 FastAPI 骨架（`app/main.py`、模块目录、健康检查接口）。
-- [ ] 前端两个 Vite 应用骨架。
+- [x] 建立 monorepo 骨架（pnpm workspaces：`apps/*`、`packages/*`；`server/` 独立 Python 项目）。
+- [x] 放入共享契约 `packages/contract/src/packing-contract.ts` 与 `server/app/contract/packing_contract.py`。
+- [x] `docker-compose.yml` 起 postgres / redis / minio。
+- [x] 后端 FastAPI 骨架（`app/main.py`、模块目录、健康检查接口）。
+- [x] 前端两个 Vite 应用骨架。
 
 ## Phase 1 · 商品管理（catalog + admin-web）
 

@@ -14,7 +14,7 @@
 /** 三维尺寸，单位 mm */
 export interface Dimensions {
   length: number; // 沿 x
-  width: number;  // 沿 y
+  width: number; // 沿 y
   height: number; // 沿 z
 }
 
@@ -52,9 +52,9 @@ export interface PackItem {
 
 /** 单个已摆放的物品实例 */
 export interface Placement {
-  instanceId: string;   // 每个被放置的单件唯一
+  instanceId: string; // 每个被放置的单件唯一
   productId: string;
-  position: Vec3;        // 轴对齐包围盒最小角，箱体坐标系
+  position: Vec3; // 轴对齐包围盒最小角，箱体坐标系
   rotationType: RotationType;
   footprint: Dimensions; // 旋转后的轴对齐尺寸
 }
@@ -63,19 +63,19 @@ export interface Placement {
 export interface PackResult {
   binId: string;
   placements: Placement[];
-  placedCounts: Record<string, number>;              // productId -> 已放数量
+  placedCounts: Record<string, number>; // productId -> 已放数量
   unplaced: Array<{ productId: string; quantity: number }>;
-  occupiedVolume: number;  // mm³
-  totalVolume: number;     // mm³
+  occupiedVolume: number; // mm³
+  totalVolume: number; // mm³
   remainingVolume: number; // mm³
-  fillRate: number;        // 0..1
-  isFull: boolean;         // 当前已选物品再也放不下任何一件时为 true
+  fillRate: number; // 0..1
+  isFull: boolean; // 当前已选物品再也放不下任何一件时为 true
 }
 
 /** 发往后端 solver 的请求体 */
 export interface PackRequest {
   bin: Bin;
-  items: PackItem[];   // 已选全部商品 + 触发的新商品，整批
+  items: PackItem[]; // 已选全部商品 + 触发的新商品，整批
   timeLimitMs?: number; // 求解时间预算，默认由后端决定 (建议 2000~3000)
 }
 
@@ -93,5 +93,4 @@ export interface Manifest {
 }
 
 /** 工具: 由尺寸算体积 */
-export const volumeOf = (d: Dimensions): number =>
-  d.length * d.width * d.height;
+export const volumeOf = (d: Dimensions): number => d.length * d.width * d.height;
