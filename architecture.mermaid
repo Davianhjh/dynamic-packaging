@@ -1,0 +1,39 @@
+flowchart TB
+    subgraph Browser["浏览器端"]
+        subgraph PackApp["装箱应用 (React + react-three-fiber)"]
+            UI3D["3D 装箱场景<br/>R3F + drei + react-spring"]
+            ProdList["商品列表 + dnd-kit 拖拽"]
+            Worker["Web Worker<br/>启发式装箱 (TS)"]
+            ProdList -->|加入商品| Worker
+            Worker -->|即时布局| UI3D
+            UI3D -.->|共享状态 Zustand| ProdList
+        end
+        AdminApp["管理后台 (React + Ant Design)<br/>商品录入 / 库存 / 上下架"]
+    end
+
+    subgraph Backend["后端 FastAPI 模块化单体"]
+        Auth["auth<br/>JWT / 角色"]
+        Catalog["catalog<br/>商品 / 库存 / 上下架"]
+        Solver["solver<br/>3D 装箱最优求解<br/>进程池, 时间受限"]
+        Manifest["manifest<br/>清单保存 / 确认 / 导出<br/>★ 确认时做库存校验"]
+    end
+
+    subgraph Data["数据与基础设施"]
+        PG[("PostgreSQL<br/>商品 / 库存 / 装箱记录")]
+        Redis[("Redis<br/>求解缓存 / 队列")]
+        OSS[("对象存储 S3 / MinIO<br/>商品缩略图")]
+    end
+
+    AdminApp -->|CRUD| Catalog
+    PackApp -->|加载上架商品| Catalog
+    Worker -.->|装不下时整批请求最优解| Solver
+    Solver -->|返回最优布局| UI3D
+    PackApp -->|确认清单| Manifest
+
+    Catalog --> PG
+    Catalog --> OSS
+    Solver --> Redis
+    Manifest --> PG
+    Manifest -->|确认时校验库存| Catalog
+    Auth --- Catalog
+    Auth --- Manifest
