@@ -105,3 +105,12 @@ class Manifest(BaseModel):
     bin_id: str
     lines: list[ManifestLine]
     fill_rate: float
+
+
+# 单一固定箱体（业务决策：箱体尺寸单一固定）。内部可用尺寸，单位 mm。
+# 须与前端 packing-contract.ts 的 DEFAULT_BIN 保持同步。
+DEFAULT_BIN = Bin(
+    id="bin-default",
+    name="标准箱 600×400×400",
+    dimensions=Dimensions(length=600, width=400, height=400),
+)

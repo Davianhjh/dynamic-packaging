@@ -94,3 +94,14 @@ export interface Manifest {
 
 /** 工具: 由尺寸算体积 */
 export const volumeOf = (d: Dimensions): number => d.length * d.width * d.height;
+
+/**
+ * 单一固定箱体（业务决策：箱体尺寸单一固定）。内部可用尺寸，单位 mm。
+ * 前端默认箱体；后端经 settings 暴露同名常量并可由环境变量覆盖。
+ * 改这里务必同步 server 端 packing_contract.py 的 DEFAULT_BIN。
+ */
+export const DEFAULT_BIN: Bin = {
+  id: "bin-default",
+  name: "标准箱 600×400×400",
+  dimensions: { length: 600, width: 400, height: 400 },
+};

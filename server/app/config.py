@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from app.contract.packing_contract import DEFAULT_BIN, Bin, Dimensions
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
@@ -27,6 +29,25 @@ class Settings(BaseSettings):
         "http://localhost:5173",
         "http://localhost:5174",
     ]
+
+    # 单一固定箱体内部可用尺寸 (mm)，默认取共享契约 DEFAULT_BIN，可经环境变量覆盖
+    # (BIN_LENGTH_MM / BIN_WIDTH_MM / BIN_HEIGHT_MM)。
+    bin_length_mm: float = DEFAULT_BIN.dimensions.length
+    bin_width_mm: float = DEFAULT_BIN.dimensions.width
+    bin_height_mm: float = DEFAULT_BIN.dimensions.height
+
+    @property
+    def fixed_bin(self) -> Bin:
+        """当前生效的固定箱体（默认 = 契约常量，环境变量可覆盖）。"""
+        return Bin(
+            id=DEFAULT_BIN.id,
+            name=f"固定箱体 {self.bin_length_mm:g}×{self.bin_width_mm:g}×{self.bin_height_mm:g}",
+            dimensions=Dimensions(
+                length=self.bin_length_mm,
+                width=self.bin_width_mm,
+                height=self.bin_height_mm,
+            ),
+        )
 
 
 settings = Settings()
