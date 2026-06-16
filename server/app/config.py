@@ -36,6 +36,10 @@ class Settings(BaseSettings):
     bin_width_mm: float = DEFAULT_BIN.dimensions.width
     bin_height_mm: float = DEFAULT_BIN.dimensions.height
 
+    # solver：进程池避免在 API 线程内同步计算；测试可关 (SOLVER_USE_POOL=false)。
+    solver_use_pool: bool = True
+    solver_pool_workers: int = 2
+
     @property
     def fixed_bin(self) -> Bin:
         """当前生效的固定箱体（默认 = 契约常量，环境变量可覆盖）。"""

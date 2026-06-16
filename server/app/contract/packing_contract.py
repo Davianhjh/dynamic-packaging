@@ -8,13 +8,22 @@
     - 坐标原点: 箱体某一底角；x 沿长(length)、y 沿宽(width)、z 沿高(height, 向上)
     - position 表示物品轴对齐包围盒的“最小角”坐标 (min corner)
     - rotation_type: 0..5 共 6 种轴对齐朝向
+    - **对外 JSON 一律 camelCase**（与前端 TS 契约一致）；Python 属性保持 snake_case，
+      靠别名生成器在边界转换。
 """
 
 from __future__ import annotations
 
 from enum import IntEnum
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
+
+
+class _Schema(BaseModel):
+    """契约基类：序列化/反序列化走 camelCase，同时兼容按字段名构造。"""
+
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
 
 class RotationType(IntEnum):
@@ -28,7 +37,7 @@ class RotationType(IntEnum):
     WHL = 5
 
 
-class Dimensions(BaseModel):
+class Dimensions(_Schema):
     length: float = Field(gt=0)  # 沿 x
     width: float = Field(gt=0)   # 沿 y
     height: float = Field(gt=0)  # 沿 z
@@ -38,33 +47,33 @@ class Dimensions(BaseModel):
         return self.length * self.width * self.height
 
 
-class Vec3(BaseModel):
+class Vec3(_Schema):
     x: float
     y: float
     z: float
 
 
-class Bin(BaseModel):
+class Bin(_Schema):
     id: str
     name: str
     dimensions: Dimensions
 
 
-class Product(BaseModel):
+class Product(_Schema):
     id: str
     name: str
     dimensions: Dimensions
     thumbnail_url: str | None = None
 
 
-class PackItem(BaseModel):
+class PackItem(_Schema):
     product_id: str
     name: str
     dimensions: Dimensions
     quantity: int = Field(ge=1)
 
 
-class Placement(BaseModel):
+class Placement(_Schema):
     instance_id: str
     product_id: str
     position: Vec3            # 轴对齐包围盒最小角，箱体坐标系
@@ -72,12 +81,12 @@ class Placement(BaseModel):
     footprint: Dimensions    # 旋转后的轴对齐尺寸
 
 
-class Unplaced(BaseModel):
+class Unplaced(_Schema):
     product_id: str
     quantity: int
 
 
-class PackResult(BaseModel):
+class PackResult(_Schema):
     bin_id: str
     placements: list[Placement]
     placed_counts: dict[str, int]
@@ -89,19 +98,19 @@ class PackResult(BaseModel):
     is_full: bool
 
 
-class PackRequest(BaseModel):
+class PackRequest(_Schema):
     bin: Bin
     items: list[PackItem]                       # 已选全部商品 + 触发的新商品，整批
     time_limit_ms: int | None = Field(default=2500, ge=200)
 
 
-class ManifestLine(BaseModel):
+class ManifestLine(_Schema):
     product_id: str
     name: str
     quantity: int
 
 
-class Manifest(BaseModel):
+class Manifest(_Schema):
     bin_id: str
     lines: list[ManifestLine]
     fill_rate: float

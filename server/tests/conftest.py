@@ -23,6 +23,7 @@ def client() -> Iterator[TestClient]:
     if _TEST_DB.exists():
         _TEST_DB.unlink()
     os.environ["DATABASE_URL"] = f"sqlite:///{_TEST_DB.as_posix()}"
+    os.environ["SOLVER_USE_POOL"] = "false"  # 测试内联执行，不起进程池
 
     from alembic.config import Config
 

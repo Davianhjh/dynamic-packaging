@@ -7,6 +7,7 @@ export function StatsPanel() {
   const bin = usePackingStore((s) => s.bin);
   const result = usePackingStore((s) => s.result);
   const computing = usePackingStore((s) => s.computing);
+  const solving = usePackingStore((s) => s.solving);
   const products = usePackingStore((s) => s.products);
   const clearAll = usePackingStore((s) => s.clearAll);
 
@@ -41,10 +42,11 @@ export function StatsPanel() {
         ) : null}
       </div>
 
-      {computing ? <div className="text-xs text-sky-400">计算中…</div> : null}
-      {result?.isFull ? (
+      {computing ? <div className="text-xs text-sky-400">即时计算中…</div> : null}
+      {solving ? <div className="text-xs text-amber-300">后端求最优中…</div> : null}
+      {result?.isFull && !solving ? (
         <div className="rounded bg-amber-950/50 p-2 text-sm text-amber-300">
-          已装满：部分商品放不下（Phase 3 将整批交后端求最优）。
+          已装满：连最优解也放不下了。
         </div>
       ) : null}
 

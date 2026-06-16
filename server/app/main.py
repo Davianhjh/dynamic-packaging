@@ -38,7 +38,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
             seed_admin(db)
     except Exception as exc:  # noqa: BLE001
         logger.warning("管理员播种跳过 (数据库未迁移?): %s", exc)
+    try:
+        from app.solver.pool import init_pool
+
+        init_pool()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("solver 进程池初始化失败，回退线程执行: %s", exc)
     yield
+    from app.solver.pool import shutdown_pool
+
+    shutdown_pool()
 
 
 app = FastAPI(title="物品动态装箱后端", version="0.0.0", lifespan=lifespan)

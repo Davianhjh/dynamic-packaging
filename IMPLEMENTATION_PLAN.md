@@ -30,11 +30,11 @@
 
 ## Phase 3 · 后端求解与 handoff
 
-- [ ] solver 模块：`solve(request) -> result`，时间受限近优（py3dbp 或自定义）。
-- [ ] solver 跑进程池 / Celery worker；POST 求解接口同步等待 + 硬超时。
-- [ ] Redis 按“商品集合 + 箱体”缓存求解结果。
-- [ ] 前端 handoff：启发式判定放不下 → 整批请求后端 → loading 态 → 渲染返回布局。
-- [ ] react-spring 重排过渡动画；放不下时提示“已装满”。
+- [x] solver 模块：`solve(request) -> result`，时间受限多策略近优（自定义，复用支撑约束 packer）。
+- [x] solver 跑进程池（`ProcessPoolExecutor`，未起池回退线程）；POST 求解接口同步等待 + 硬超时(504)。
+- [x] Redis 按“商品集合 + 箱体”缓存求解结果（不可用时静默跳过）。
+- [x] 前端 handoff：启发式判定放不下 → 整批请求后端 → loading 态 → 渲染返回布局。
+- [x] 重排/下落过渡动画（实例化下用 useFrame 逐帧插值，效果等价 react-spring）；放不下时提示“已装满”。
 
 ## Phase 4 · 清单确认、库存校验与导出
 
