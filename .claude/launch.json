@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "packing-web",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["--filter", "packing-web", "dev"],
+      "port": 5173
+    }
+  ]
+}
