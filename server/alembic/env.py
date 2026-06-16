@@ -9,6 +9,7 @@ from sqlalchemy import engine_from_config, pool
 # 导入所有模型以注册到 Base.metadata（autogenerate 依赖）。
 import app.auth.models  # noqa: F401
 import app.catalog.models  # noqa: F401
+import app.manifest.models  # noqa: F401
 from alembic import context
 from app.config import settings
 from app.db import Base

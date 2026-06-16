@@ -2,6 +2,7 @@ import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from 
 import { useEffect, useState } from "react";
 
 import { CanvasDropZone } from "./components/CanvasDropZone";
+import { ManifestPanel } from "./components/ManifestPanel";
 import { ProductList } from "./components/ProductList";
 import { StatsPanel } from "./components/StatsPanel";
 import { BinScene } from "./scene/BinScene";
@@ -38,8 +39,11 @@ export default function App() {
             <BinScene bin={bin} result={result} />
           </CanvasDropZone>
         </main>
-        <aside className="w-72 shrink-0 border-l border-slate-800 p-4">
-          <StatsPanel />
+        <aside className="flex w-72 shrink-0 flex-col border-l border-slate-800 p-4">
+          <div className="min-h-0 flex-1">
+            <StatsPanel />
+          </div>
+          <ManifestPanel />
         </aside>
       </div>
       <DragOverlay>
