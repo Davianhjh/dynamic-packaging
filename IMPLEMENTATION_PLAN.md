@@ -12,12 +12,12 @@
 
 ## Phase 1 · 商品管理（catalog + admin-web）
 
-- [ ] catalog 数据模型：商品(含近似长宽高)、库存、上下架状态、缩略图 URL。
-- [ ] Alembic 迁移。
-- [ ] catalog REST：商品 CRUD、上下架、库存维护、**对内库存校验接口**、上架商品列表。
-- [ ] 缩略图上传到 MinIO。
-- [ ] auth：登录、JWT、管理端/装箱端角色。
-- [ ] admin-web：商品表格 + 录入/编辑表单 + 图片上传 + 库存与上下架管理 (Ant Design)。
+- [x] catalog 数据模型：商品(含近似长宽高)、库存、上下架状态、缩略图 URL。
+- [x] Alembic 迁移。
+- [x] catalog REST：商品 CRUD、上下架、库存维护、**对内库存校验接口**、上架商品列表。
+- [x] 缩略图上传到 MinIO。
+- [x] auth：登录、JWT、管理端/装箱端角色。
+- [x] admin-web：商品表格 + 录入/编辑表单 + 图片上传 + 库存与上下架管理 (Ant Design)。
 
 ## Phase 2 · 装箱前端骨架（packing-web）
 

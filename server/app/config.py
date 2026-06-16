@@ -16,7 +16,12 @@ class Settings(BaseSettings):
     s3_secret_key: str = "minioadmin"
     s3_bucket: str = "thumbnails"
 
-    jwt_secret: str = "dev-secret-change-me"
+    jwt_secret: str = "dev-secret-change-me-please-override-32+chars"
+    access_token_expire_minutes: int = 720
+
+    # 首次启动若无用户则按此创建管理员 (生产环境务必修改)。
+    admin_username: str = "admin"
+    admin_password: str = "admin"
 
     cors_origins: list[str] = [
         "http://localhost:5173",

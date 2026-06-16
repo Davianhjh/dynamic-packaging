@@ -5,6 +5,10 @@
 
 from __future__ import annotations
 
+import logging
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -14,7 +18,30 @@ from app.config import settings
 from app.manifest.router import router as manifest_router
 from app.solver.router import router as solver_router
 
-app = FastAPI(title="物品动态装箱后端", version="0.0.0")
+logger = logging.getLogger("app")
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    # 启动初始化尽力而为：基础设施 (MinIO / DB) 未就绪时不阻断应用启动。
+    try:
+        from app.storage import ensure_bucket
+
+        ensure_bucket()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("MinIO 初始化跳过 (基础设施未就绪?): %s", exc)
+    try:
+        from app.auth.service import seed_admin
+        from app.db import SessionLocal
+
+        with SessionLocal() as db:
+            seed_admin(db)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("管理员播种跳过 (数据库未迁移?): %s", exc)
+    yield
+
+
+app = FastAPI(title="物品动态装箱后端", version="0.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

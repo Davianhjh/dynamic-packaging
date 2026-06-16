@@ -1,25 +1,39 @@
-import { Layout, Typography, Card, ConfigProvider } from "antd";
+import { Button, Layout, Spin, Typography } from "antd";
+
+import { useAuth } from "./auth";
+import LoginPage from "./pages/LoginPage";
+import ProductsPage from "./pages/ProductsPage";
 
 const { Header, Content } = Layout;
 
-// 占位骨架 (Phase 0)。Phase 1 接入商品表格 / 录入表单 / 图片上传 / 上下架与库存。
 export default function App() {
+  const { user, ready, logout } = useAuth();
+
+  if (!ready) {
+    return (
+      <div style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
+        <Spin size="large" />
+      </div>
+    );
+  }
+  if (!user) return <LoginPage />;
+
   return (
-    <ConfigProvider>
-      <Layout style={{ minHeight: "100vh" }}>
-        <Header>
-          <Typography.Title level={4} style={{ color: "#fff", margin: 0, lineHeight: "64px" }}>
-            装箱管理后台 · admin-web
-          </Typography.Title>
-        </Header>
-        <Content style={{ padding: 24 }}>
-          <Card title="Phase 0 骨架已就绪">
-            <Typography.Paragraph>
-              下一步 (Phase 1)：商品 CRUD 表格、录入/编辑表单、缩略图上传、库存与上下架管理。
-            </Typography.Paragraph>
-          </Card>
-        </Content>
-      </Layout>
-    </ConfigProvider>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Header style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <Typography.Title level={4} style={{ color: "#fff", margin: 0 }}>
+          装箱管理后台
+        </Typography.Title>
+        <span style={{ color: "rgba(255,255,255,0.85)" }}>
+          {user.username}（{user.role}）
+          <Button type="link" onClick={logout} style={{ color: "#fff", paddingLeft: 8 }}>
+            退出
+          </Button>
+        </span>
+      </Header>
+      <Content style={{ padding: 24 }}>
+        <ProductsPage />
+      </Content>
+    </Layout>
   );
 }

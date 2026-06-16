@@ -12,13 +12,15 @@ dependencies = [
     "alembic>=1.14",
     "psycopg[binary]>=3.2",
     "redis>=5.2",
+    "pyjwt>=2.10",
+    "bcrypt>=4.2",
+    "python-multipart>=0.0.12",
+    "boto3>=1.35",
 ]
 
 [project.optional-dependencies]
-# 按阶段引入，避免 Phase 0 骨架背负全部依赖。
+# 求解器依赖 Phase 3 引入。
 solver = ["py3dbp>=1.1.2"]
-auth = ["pyjwt>=2.10", "passlib[bcrypt]>=1.7.4", "python-multipart>=0.0.12"]
-storage = ["boto3>=1.35"]
 
 [dependency-groups]
 dev = ["ruff>=0.8", "mypy>=1.13", "pytest>=8.3", "httpx>=0.28"]
@@ -41,3 +43,10 @@ select = ["E", "F", "I", "UP", "B"]
 python_version = "3.12"
 strict = true
 plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["boto3.*", "botocore.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

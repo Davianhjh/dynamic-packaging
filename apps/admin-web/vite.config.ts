@@ -15,5 +15,9 @@ export default defineConfig({
   },
   server: {
     port: 5174,
+    // 开发期把 /api 代理到后端，避免 CORS；缩略图 URL 指向 MinIO，不走代理。
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
   },
 });
