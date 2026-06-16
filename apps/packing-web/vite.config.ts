@@ -18,5 +18,9 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    // 开发期把 /api 代理到后端，拉取上架商品列表。
+    proxy: {
+      "/api": "http://localhost:8000",
+    },
   },
 });

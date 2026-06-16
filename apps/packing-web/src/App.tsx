@@ -1,18 +1,54 @@
-import { DEFAULT_BIN, volumeOf } from "@packing/contract";
+import { DndContext, DragOverlay, type DragEndEvent, type DragStartEvent } from "@dnd-kit/core";
+import { useEffect, useState } from "react";
 
-// 占位骨架 (Phase 0)。Phase 2 接入 R3F 场景、dnd-kit 商品列表与 Zustand store。
-// 固定箱体取自共享契约常量 DEFAULT_BIN（业务决策：单一固定箱体，可配置）。
+import { CanvasDropZone } from "./components/CanvasDropZone";
+import { ProductList } from "./components/ProductList";
+import { StatsPanel } from "./components/StatsPanel";
+import { BinScene } from "./scene/BinScene";
+import { usePackingStore } from "./store/packingStore";
+
 export default function App() {
+  const loadProducts = usePackingStore((s) => s.loadProducts);
+  const addProduct = usePackingStore((s) => s.addProduct);
+  const products = usePackingStore((s) => s.products);
+  const bin = usePackingStore((s) => s.bin);
+  const result = usePackingStore((s) => s.result);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void loadProducts();
+  }, [loadProducts]);
+
+  const onDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
+  const onDragEnd = (e: DragEndEvent) => {
+    setActiveId(null);
+    if (e.over?.id === "bin-canvas") addProduct(String(e.active.id));
+  };
+
+  const activeProduct = products.find((p) => p.id === activeId);
+
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col items-center justify-center gap-4 p-8">
-      <h1 className="text-2xl font-semibold">动态装箱 · packing-web</h1>
-      <p className="text-slate-400">Phase 0 骨架已就绪。下一步 (Phase 2)：R3F 3D 场景 + dnd-kit 拖拽 + Zustand。</p>
-      <div className="rounded-lg border border-slate-700 bg-slate-800 px-6 py-4 text-sm">
-        <div className="font-medium">{DEFAULT_BIN.name}</div>
-        <div className="text-slate-400">
-          可用体积 {volumeOf(DEFAULT_BIN.dimensions).toLocaleString()} mm³（共享契约 @packing/contract 已连通）
-        </div>
+    <DndContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
+      <div className="flex h-screen w-screen overflow-hidden bg-slate-950 text-slate-100">
+        <aside className="w-72 shrink-0 overflow-hidden border-r border-slate-800 p-4">
+          <ProductList />
+        </aside>
+        <main className="relative flex-1">
+          <CanvasDropZone>
+            <BinScene bin={bin} result={result} />
+          </CanvasDropZone>
+        </main>
+        <aside className="w-72 shrink-0 border-l border-slate-800 p-4">
+          <StatsPanel />
+        </aside>
       </div>
-    </div>
+      <DragOverlay>
+        {activeProduct ? (
+          <div className="rounded-lg border border-sky-400 bg-slate-800 px-3 py-2 text-sm text-slate-100 shadow-lg">
+            {activeProduct.name}
+          </div>
+        ) : null}
+      </DragOverlay>
+    </DndContext>
   );
 }
