@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { CanvasDropZone } from "./components/CanvasDropZone";
 import { ManifestPanel } from "./components/ManifestPanel";
 import { ProductList } from "./components/ProductList";
+import { SelectionInfo } from "./components/SelectionInfo";
 import { StatsPanel } from "./components/StatsPanel";
 import { BinScene } from "./scene/BinScene";
 import { usePackingStore } from "./store/packingStore";
@@ -38,6 +39,7 @@ export default function App() {
           <CanvasDropZone>
             <BinScene bin={bin} result={result} />
           </CanvasDropZone>
+          <SelectionInfo />
         </main>
         <aside className="flex w-72 shrink-0 flex-col border-l border-slate-800 p-4">
           <div className="min-h-0 flex-1">

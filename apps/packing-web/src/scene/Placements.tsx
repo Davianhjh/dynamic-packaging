@@ -1,10 +1,11 @@
-import { Instance, Instances } from "@react-three/drei";
-import { useFrame } from "@react-three/fiber";
+import { Edges, Instance, Instances } from "@react-three/drei";
+import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 
 import type { Placement } from "@packing/contract";
 
+import { usePackingStore } from "../store/packingStore";
 import { instanceTransform } from "./coords";
 
 const PALETTE = [
@@ -33,14 +34,16 @@ interface Target {
 }
 
 /**
- * <Instances> 实例化渲染 + 过渡动画：
- *  - 新件：在箱顶上方初始化，逐帧 lerp 下落到落点（支撑约束重力的“下落”观感）。
- *  - 后端返回新布局：相同 instanceId 的件从当前位平滑滑向新位（“重新码放”）。
- * 实例化下 react-spring 不便逐实例驱动，这里用 useFrame 插值，效果等价。
+ * <Instances> 实例化渲染 + 过渡动画 + 点选高亮：
+ *  - 新件在箱顶上方初始化、逐帧 lerp 下落（支撑约束重力的“下落”观感）；
+ *  - 后端返回新布局时相同 instanceId 平滑滑向新位（“重新码放”）；
+ *  - 点击某件 → 选中并描白边，配合信息卡展示其朝向。
  */
 export function Placements({ placements }: { placements: Placement[] }) {
   const refs = useRef<Map<string, THREE.Object3D>>(new Map());
   const seen = useRef<Set<string>>(new Set());
+  const selectInstance = usePackingStore((s) => s.selectInstance);
+  const selectedId = usePackingStore((s) => s.selectedInstanceId);
 
   const targets = useMemo(() => {
     const map = new Map<string, Target>();
@@ -71,16 +74,22 @@ export function Placements({ placements }: { placements: Placement[] }) {
     return null;
   }
 
+  const selected = selectedId ? placements.find((p) => p.instanceId === selectedId) : undefined;
+  const highlight = selected ? instanceTransform(selected.position, selected.footprint) : null;
+
   return (
-    <Instances limit={600} range={placements.length}>
-      <boxGeometry args={[1, 1, 1]} />
-      <meshStandardMaterial roughness={0.65} metalness={0.05} />
-      {placements.map((p) => {
-        const t = instanceTransform(p.position, p.footprint);
-        return (
+    <>
+      <Instances limit={600} range={placements.length}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial roughness={0.65} metalness={0.05} />
+        {placements.map((p) => (
           <Instance
             key={p.instanceId}
             color={colorFor(p.productId)}
+            onClick={(e: ThreeEvent<MouseEvent>) => {
+              e.stopPropagation();
+              selectInstance(p.instanceId);
+            }}
             ref={(o: THREE.Object3D | null) => {
               if (!o) {
                 refs.current.delete(p.instanceId);
@@ -88,15 +97,25 @@ export function Placements({ placements }: { placements: Placement[] }) {
               }
               refs.current.set(p.instanceId, o);
               if (!seen.current.has(p.instanceId)) {
-                // 新件：落点正上方起步 + 目标尺寸，避免从原点闪现
+                const t = instanceTransform(p.position, p.footprint);
                 o.position.set(t.position[0], DROP_FROM_Y, t.position[2]);
                 o.scale.set(t.scale[0], t.scale[1], t.scale[2]);
                 seen.current.add(p.instanceId);
               }
             }}
           />
-        );
-      })}
-    </Instances>
+        ))}
+      </Instances>
+      {highlight ? (
+        <mesh
+          position={highlight.position}
+          scale={[highlight.scale[0] + 4, highlight.scale[1] + 4, highlight.scale[2] + 4]}
+        >
+          <boxGeometry args={[1, 1, 1]} />
+          <meshBasicMaterial transparent opacity={0} />
+          <Edges color="#ffffff" />
+        </mesh>
+      ) : null}
+    </>
   );
 }

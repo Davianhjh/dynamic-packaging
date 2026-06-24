@@ -68,3 +68,10 @@ def solve(request: PackRequest) -> PackResult:
             break
     assert best is not None
     return best
+
+
+def fallback_solve(request: PackRequest) -> PackResult:
+    """降级：单趟体积降序快速构造，用于求解超时/不可用时兜底。"""
+    units = _expand(request)
+    order = sorted(units, key=lambda u: -_vol(u[1]))
+    return pack_units(order, request.bin)

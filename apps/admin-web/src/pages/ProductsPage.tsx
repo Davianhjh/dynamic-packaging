@@ -73,9 +73,10 @@ export default function ProductsPage() {
           <span style={{ color: "#bbb" }}>—</span>
         ),
     },
-    { title: "名称", dataIndex: "name" },
+    { title: "名称", dataIndex: "name", width: 220 },
     {
       title: "尺寸 (mm)",
+      width: 180,
       render: (_, p) => `${p.dimensions.length}×${p.dimensions.width}×${p.dimensions.height}`,
     },
     { title: "库存", dataIndex: "stock", width: 90 },
@@ -132,7 +133,15 @@ export default function ProductsPage() {
           新建商品
         </Button>
       </div>
-      <Table rowKey="id" loading={loading} columns={columns} dataSource={data} />
+      <Table
+        rowKey="id"
+        loading={loading}
+        columns={columns}
+        dataSource={data}
+        virtual
+        scroll={{ y: 560 }}
+        pagination={false}
+      />
       <ProductFormModal
         open={modalOpen}
         product={editing}

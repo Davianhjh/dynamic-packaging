@@ -20,7 +20,18 @@ export default defineConfig({
     port: 5173,
     // 开发期把 /api 代理到后端，拉取上架商品列表。
     proxy: {
-      "/api": "http://localhost:8000",
+      // ws:true 同时代理 HTTP 与 WebSocket (solver /ws)。
+      "/api": { target: "http://localhost:8000", ws: true },
+    },
+  },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          three: ["three"],
+          r3f: ["@react-three/fiber", "@react-three/drei"],
+        },
+      },
     },
   },
 });

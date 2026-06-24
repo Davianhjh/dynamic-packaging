@@ -1,4 +1,6 @@
 import { useDraggable } from "@dnd-kit/core";
+import { useVirtualizer } from "@tanstack/react-virtual";
+import { useRef } from "react";
 
 import type { Product } from "@packing/contract";
 
@@ -62,6 +64,14 @@ export function ProductList() {
   const products = usePackingStore((s) => s.products);
   const loadError = usePackingStore((s) => s.loadError);
 
+  const parentRef = useRef<HTMLDivElement>(null);
+  const virtualizer = useVirtualizer({
+    count: products.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 76,
+    overscan: 6,
+  });
+
   return (
     <div className="flex h-full flex-col">
       <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-400">
@@ -76,10 +86,27 @@ export function ProductList() {
       {!loadError && products.length === 0 ? (
         <div className="text-sm text-slate-500">暂无上架商品。去管理后台新增并上架。</div>
       ) : null}
-      <div className="flex flex-col gap-2 overflow-y-auto pr-1">
-        {products.map((p) => (
-          <ProductCard key={p.id} product={p} />
-        ))}
+      {/* 虚拟滚动：仅渲染可见区，大量商品时不掉帧 */}
+      <div ref={parentRef} className="flex-1 overflow-y-auto pr-1">
+        <div style={{ height: virtualizer.getTotalSize(), position: "relative" }}>
+          {virtualizer.getVirtualItems().map((vi) => (
+            <div
+              key={products[vi.index].id}
+              ref={virtualizer.measureElement}
+              data-index={vi.index}
+              style={{
+                position: "absolute",
+                top: 0,
+                left: 0,
+                width: "100%",
+                transform: `translateY(${vi.start}px)`,
+                paddingBottom: 8,
+              }}
+            >
+              <ProductCard product={products[vi.index]} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
