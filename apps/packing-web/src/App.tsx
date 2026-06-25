@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import { CanvasDropZone } from "./components/CanvasDropZone";
 import { ManifestPanel } from "./components/ManifestPanel";
+import { Notice } from "./components/Notice";
 import { ProductList } from "./components/ProductList";
 import { SelectionInfo } from "./components/SelectionInfo";
 import { StatsPanel } from "./components/StatsPanel";
@@ -55,6 +56,7 @@ export default function App() {
           </div>
         ) : null}
       </DragOverlay>
+      <Notice />
     </DndContext>
   );
 }

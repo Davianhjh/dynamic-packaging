@@ -7,7 +7,11 @@ import type { Product } from "@packing/contract";
 import { usePackingStore } from "../store/packingStore";
 
 function ProductCard({ product }: { product: Product }) {
-  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: product.id });
+  const confirmed = usePackingStore((s) => s.confirmed);
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: product.id,
+    disabled: confirmed,
+  });
   const qty = usePackingStore((s) => s.quantities[product.id] ?? 0);
   const addProduct = usePackingStore((s) => s.addProduct);
   const removeProduct = usePackingStore((s) => s.removeProduct);
@@ -41,16 +45,18 @@ function ProductCard({ product }: { product: Product }) {
         <div className="flex items-center gap-1">
           <button
             type="button"
+            disabled={confirmed}
             onClick={() => removeProduct(product.id)}
-            className="h-6 w-6 rounded bg-slate-700 text-slate-200 hover:bg-slate-600"
+            className="h-6 w-6 rounded bg-slate-700 text-slate-200 hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
           >
             −
           </button>
           <span className="w-6 text-center text-sm tabular-nums">{qty}</span>
           <button
             type="button"
+            disabled={confirmed}
             onClick={() => addProduct(product.id)}
-            className="h-6 w-6 rounded bg-sky-600 text-white hover:bg-sky-500"
+            className="h-6 w-6 rounded bg-sky-600 text-white hover:bg-sky-500 disabled:cursor-not-allowed disabled:opacity-40"
           >
             +
           </button>

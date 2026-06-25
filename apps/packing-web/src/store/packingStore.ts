@@ -16,21 +16,23 @@ interface PackingState {
   solving: boolean; // 后端求最优中 (handoff)
   loadError: string | null;
   selectedInstanceId: string | null; // 3D 中被点选的物品
+  notice: string | null; // 居中浮层提示 (自动消失)
+  confirmed: boolean; // 清单已确认 → 锁定编辑
   loadProducts: () => Promise<void>;
   addProduct: (productId: string) => void;
   removeProduct: (productId: string) => void;
   clearAll: () => void;
   selectInstance: (instanceId: string | null) => void;
+  setConfirmed: (value: boolean) => void;
 }
 
-// 仅采用最新一次的结果，避免快速增删时乱序回写。
 let computeSeq = 0;
+let noticeSeq = 0;
 
 export const usePackingStore = create<PackingState>((set, get) => {
-  function buildItems(): PackItem[] {
-    const { products, quantities } = get();
-    return products
-      .filter((p) => (quantities[p.id] ?? 0) > 0)
+  function itemsFor(quantities: Record<string, number>): PackItem[] {
+    return get()
+      .products.filter((p) => (quantities[p.id] ?? 0) > 0)
       .map((p) => ({
         productId: p.id,
         name: p.name,
@@ -39,33 +41,75 @@ export const usePackingStore = create<PackingState>((set, get) => {
       }));
   }
 
-  async function recompute(): Promise<void> {
-    const items = buildItems();
-    const { bin } = get();
+  /**
+   * 为给定数量求解（即时层 + 必要时 handoff 后端）。
+   * 只更新 computing/solving 指示，**不改 quantities/result**——由调用方决定是否提交，
+   * 这样“放不下”时显示的布局保持不变，绝不动已装好的箱子。
+   */
+  async function solveFor(quantities: Record<string, number>): Promise<PackResult | null> {
+    const items = itemsFor(quantities);
     if (items.length === 0) {
-      set({ result: null, computing: false, solving: false, selectedInstanceId: null });
-      return;
+      set({ computing: false, solving: false });
+      return null;
     }
+    const { bin } = get();
     const mine = ++computeSeq;
 
-    // 即时层：Web Worker 启发式
     set({ computing: true });
     const heuristic = await solveAsync({ bin, items, timeLimitMs: 2500 });
-    if (mine !== computeSeq) return;
-    set({ result: heuristic, computing: false });
+    if (mine !== computeSeq) return null;
 
-    // handoff：启发式判定放不下 → 整批交后端求最优
     if (!heuristic.isFull) {
-      set({ solving: false });
-      return;
+      set({ computing: false, solving: false });
+      return heuristic;
     }
-    set({ solving: true });
+    // 启发式放不下 → 整批交后端求最优
+    set({ computing: false, solving: true });
     try {
       const optimal = await solveOptimal({ bin, items, timeLimitMs: 2500 });
-      if (mine === computeSeq) set({ result: optimal, solving: false });
+      if (mine !== computeSeq) return null;
+      set({ solving: false });
+      return optimal;
     } catch {
-      if (mine === computeSeq) set({ solving: false }); // 后端不可用/超时：保留启发式结果
+      if (mine === computeSeq) set({ solving: false });
+      return heuristic; // 后端不可用：以启发式结论为准
     }
+  }
+
+  function notify(message: string): void {
+    const id = ++noticeSeq;
+    set({ notice: message });
+    setTimeout(() => {
+      if (noticeSeq === id) set({ notice: null });
+    }, 3000);
+  }
+
+  // 串行化增删，避免并发求解互相覆盖、数量越界。
+  let opChain: Promise<void> = Promise.resolve();
+  function enqueue(task: () => Promise<void>): void {
+    opChain = opChain.then(task).catch(() => undefined);
+  }
+
+  async function doAdd(productId: string): Promise<void> {
+    const current = get().quantities;
+    const tentative = { ...current, [productId]: (current[productId] ?? 0) + 1 };
+    const next = await solveFor(tentative);
+    if (next === null) return; // 被更晚的操作顶替
+    if (next.isFull) {
+      // 放不下：不提交这次加入，保持现状（其他箱子原样不动）
+      notify("当前无法再装入");
+      return;
+    }
+    set({ quantities: tentative, result: next });
+  }
+
+  async function doRemove(productId: string): Promise<void> {
+    const next = { ...get().quantities };
+    const n = (next[productId] ?? 0) - 1;
+    if (n <= 0) delete next[productId];
+    else next[productId] = n;
+    const result = await solveFor(next);
+    set({ quantities: next, result }); // 移除不会越界，直接提交
   }
 
   return {
@@ -77,6 +121,8 @@ export const usePackingStore = create<PackingState>((set, get) => {
     solving: false,
     loadError: null,
     selectedInstanceId: null,
+    notice: null,
+    confirmed: false,
     loadProducts: async () => {
       try {
         set({ products: await getOnShelf(), loadError: null });
@@ -85,20 +131,12 @@ export const usePackingStore = create<PackingState>((set, get) => {
       }
     },
     addProduct: (productId) => {
-      set((s) => ({
-        quantities: { ...s.quantities, [productId]: (s.quantities[productId] ?? 0) + 1 },
-      }));
-      void recompute();
+      if (get().confirmed) return; // 已确认锁定，禁止增改
+      enqueue(() => doAdd(productId));
     },
     removeProduct: (productId) => {
-      set((s) => {
-        const next = { ...s.quantities };
-        const n = (next[productId] ?? 0) - 1;
-        if (n <= 0) delete next[productId];
-        else next[productId] = n;
-        return { quantities: next };
-      });
-      void recompute();
+      if (get().confirmed) return;
+      enqueue(() => doRemove(productId));
     },
     clearAll: () =>
       set({
@@ -107,7 +145,10 @@ export const usePackingStore = create<PackingState>((set, get) => {
         solving: false,
         computing: false,
         selectedInstanceId: null,
+        notice: null,
+        confirmed: false,
       }),
     selectInstance: (instanceId) => set({ selectedInstanceId: instanceId }),
+    setConfirmed: (value) => set({ confirmed: value }),
   };
 });

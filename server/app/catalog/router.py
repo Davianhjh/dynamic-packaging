@@ -1,13 +1,13 @@
 """catalog: 商品 CRUD、上下架、库存维护、对内库存校验接口、上架商品列表。
 
-写操作需 admin；上架列表与库存校验对内/装箱端开放。
+写操作需 admin；上架列表、库存校验、缩略图读取对内/装箱端开放。
 """
 
 from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
 from sqlalchemy.orm import Session
 
 from app.auth.deps import require_admin
@@ -23,7 +23,6 @@ from app.catalog.schemas import (
     StockUpdate,
 )
 from app.db import get_db
-from app.storage import upload_thumbnail
 
 router = APIRouter(prefix="/api/catalog", tags=["catalog"])
 
@@ -48,6 +47,18 @@ def list_on_shelf(db: DbDep) -> list[ProductOut]:
 @router.post("/stock-check", response_model=StockCheckResult)
 def stock_check(payload: StockCheckRequest, db: DbDep) -> StockCheckResult:
     return service.check_stock(db, payload)
+
+
+@router.get("/products/{product_id}/thumbnail")
+def get_product_thumbnail(product_id: str, db: DbDep) -> Response:
+    """读取缩略图（公开）：从数据库取字节，供 <img> 直接引用。"""
+    product = _get_or_404(db, product_id)
+    if not product.thumbnail:
+        raise HTTPException(status_code=404, detail="无缩略图")
+    return Response(
+        content=product.thumbnail,
+        media_type=product.thumbnail_content_type or "application/octet-stream",
+    )
 
 
 # —— 管理后台（需 admin）——
@@ -95,14 +106,11 @@ def update_stock(product_id: str, payload: StockUpdate, db: DbDep) -> ProductOut
 def upload_product_thumbnail(
     product_id: str, db: DbDep, file: Annotated[UploadFile, File()]
 ) -> ProductOut:
+    """上传缩略图：图片字节存入数据库，thumbnail_url 指向读取端点。"""
     product = _get_or_404(db, product_id)
-    data = file.file.read()
-    url = upload_thumbnail(
-        data,
-        content_type=file.content_type or "application/octet-stream",
-        filename=file.filename or "thumbnail",
-    )
-    product.thumbnail_url = url
+    product.thumbnail = file.file.read()
+    product.thumbnail_content_type = file.content_type or "application/octet-stream"
+    product.thumbnail_url = f"/api/catalog/products/{product.id}/thumbnail"
     db.commit()
     db.refresh(product)
     return ProductOut.from_model(product)

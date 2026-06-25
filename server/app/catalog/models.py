@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from enum import StrEnum
 
-from sqlalchemy import DateTime, Float, Integer, String, func
+from sqlalchemy import DateTime, Float, Integer, LargeBinary, String, func
 from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -38,6 +38,9 @@ class Product(Base):
         default=ProductStatus.OFFLINE,
     )
     thumbnail_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # 缩略图字节直接入库（业务要求）；thumbnail_url 指向读取端点。
+    thumbnail: Mapped[bytes | None] = mapped_column(LargeBinary, nullable=True)
+    thumbnail_content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )

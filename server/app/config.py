@@ -10,7 +10,7 @@ from app.contract.packing_contract import DEFAULT_BIN, Bin, Dimensions
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
-    database_url: str = "postgresql+psycopg://packing:packing@localhost:5432/packing"
+    database_url: str = "postgresql+psycopg://postgres:114432@localhost:5432/dynamic-packaging"
     redis_url: str = "redis://localhost:6379/0"
 
     s3_endpoint: str = "http://localhost:9000"

@@ -23,13 +23,7 @@ logger = logging.getLogger("app")
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    # 启动初始化尽力而为：基础设施 (MinIO / DB) 未就绪时不阻断应用启动。
-    try:
-        from app.storage import ensure_bucket
-
-        ensure_bucket()
-    except Exception as exc:  # noqa: BLE001
-        logger.warning("MinIO 初始化跳过 (基础设施未就绪?): %s", exc)
+    # 启动初始化尽力而为：数据库未就绪时不阻断应用启动。
     try:
         from app.auth.service import seed_admin
         from app.db import SessionLocal

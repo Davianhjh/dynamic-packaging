@@ -10,6 +10,7 @@ export function StatsPanel() {
   const solving = usePackingStore((s) => s.solving);
   const products = usePackingStore((s) => s.products);
   const clearAll = usePackingStore((s) => s.clearAll);
+  const confirmed = usePackingStore((s) => s.confirmed);
 
   const d = bin.dimensions;
   const fillPct = result ? Math.round(result.fillRate * 1000) / 10 : 0;
@@ -81,8 +82,9 @@ export function StatsPanel() {
 
       <button
         type="button"
+        disabled={confirmed}
         onClick={clearAll}
-        className="rounded bg-slate-700 px-3 py-2 text-sm hover:bg-slate-600"
+        className="rounded bg-slate-700 px-3 py-2 text-sm hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-40"
       >
         清空
       </button>

@@ -32,14 +32,14 @@ function download(filename: string, text: string): void {
   URL.revokeObjectURL(url);
 }
 
-type Status = "idle" | "confirming" | "confirmed";
-
 export function ManifestPanel() {
   const result = usePackingStore((s) => s.result);
   const products = usePackingStore((s) => s.products);
   const bin = usePackingStore((s) => s.bin);
+  const confirmed = usePackingStore((s) => s.confirmed);
+  const setConfirmed = usePackingStore((s) => s.setConfirmed);
 
-  const [status, setStatus] = useState<Status>("idle");
+  const [confirming, setConfirming] = useState(false);
   const [conflicts, setConflicts] = useState<StockConflict[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -50,31 +50,30 @@ export function ManifestPanel() {
   const canConfirm = lines.length > 0;
   const nameOf = (id: string): string => products.find((p) => p.id === id)?.name ?? id;
 
-  // 装箱内容变化 → 之前的确认作废
+  // 装箱内容变化（未锁定时）→ 清掉旧的冲突/错误提示
   useEffect(() => {
-    setStatus("idle");
     setConflicts([]);
     setError(null);
   }, [lines]);
 
   const onConfirm = async () => {
     if (!result || !canConfirm) return;
-    setStatus("confirming");
+    setConfirming(true);
     setConflicts([]);
     setError(null);
     try {
       await confirmManifest({ binId: bin.id, lines, fillRate: result.fillRate });
-      setStatus("confirmed");
+      setConfirmed(true); // 锁定编辑
     } catch (err) {
-      setStatus("idle");
       if (err instanceof StockConflictError) setConflicts(err.conflicts);
       else setError(err instanceof Error ? err.message : "确认失败");
+    } finally {
+      setConfirming(false);
     }
   };
 
   const onExport = () => {
-    if (!result) return;
-    download("packing-manifest.txt", toText(bin.name, result.fillRate, lines));
+    if (result) download("packing-manifest.txt", toText(bin.name, result.fillRate, lines));
   };
 
   return (
@@ -94,24 +93,34 @@ export function ManifestPanel() {
         </div>
       ) : null}
       {error ? <div className="rounded bg-red-950/50 p-2 text-xs text-red-300">{error}</div> : null}
-      {status === "confirmed" ? (
+      {confirmed ? (
         <div className="rounded bg-emerald-950/50 p-2 text-xs text-emerald-300">
-          已确认 ✓ 可导出清单
+          已确认 ✓ 编辑已锁定，可导出清单
         </div>
       ) : null}
 
       <div className="flex gap-2">
+        {confirmed ? (
+          <button
+            type="button"
+            onClick={() => setConfirmed(false)}
+            className="flex-1 rounded bg-slate-700 px-3 py-2 text-sm hover:bg-slate-600"
+          >
+            重新编辑
+          </button>
+        ) : (
+          <button
+            type="button"
+            disabled={!canConfirm || confirming}
+            onClick={onConfirm}
+            className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-500 disabled:opacity-40"
+          >
+            {confirming ? "确认中…" : "确认清单"}
+          </button>
+        )}
         <button
           type="button"
-          disabled={!canConfirm || status === "confirming"}
-          onClick={onConfirm}
-          className="flex-1 rounded bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-500 disabled:opacity-40"
-        >
-          {status === "confirming" ? "确认中…" : "确认清单"}
-        </button>
-        <button
-          type="button"
-          disabled={status !== "confirmed"}
+          disabled={!confirmed}
           onClick={onExport}
           className="flex-1 rounded bg-slate-700 px-3 py-2 text-sm hover:bg-slate-600 disabled:opacity-40"
         >

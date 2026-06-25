@@ -1,6 +1,6 @@
 import { UploadOutlined } from "@ant-design/icons";
 import { Button, Form, Input, InputNumber, Modal, Select, Space, Upload, message } from "antd";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { createProduct, updateProduct, uploadThumbnail } from "../api/catalog";
 import { ApiError } from "../api/client";
@@ -29,9 +29,12 @@ function errText(err: unknown): string {
 export default function ProductFormModal({ open, product, onClose, onSaved }: Props) {
   const [form] = Form.useForm<FormValues>();
   const [saving, setSaving] = useState(false);
+  // 新建时商品尚无 id，先暂存所选图片，保存后再上传。
+  const [pendingFile, setPendingFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (!open) return;
+    setPendingFile(null);
     if (product) {
       form.setFieldsValue({
         name: product.name,
@@ -46,6 +49,17 @@ export default function ProductFormModal({ open, product, onClose, onSaved }: Pr
     }
   }, [open, product, form]);
 
+  const previewUrl = useMemo(
+    () => (pendingFile ? URL.createObjectURL(pendingFile) : null),
+    [pendingFile],
+  );
+  useEffect(
+    () => () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    },
+    [previewUrl],
+  );
+
   const onOk = async () => {
     const v = await form.validateFields();
     setSaving(true);
@@ -56,8 +70,10 @@ export default function ProductFormModal({ open, product, onClose, onSaved }: Pr
         stock: v.stock,
         status: v.status,
       };
-      if (product) await updateProduct(product.id, payload);
-      else await createProduct(payload);
+      const saved = product
+        ? await updateProduct(product.id, payload)
+        : await createProduct(payload);
+      if (pendingFile) await uploadThumbnail(saved.id, pendingFile);
       message.success("已保存");
       onSaved();
     } catch (err) {
@@ -66,6 +82,8 @@ export default function ProductFormModal({ open, product, onClose, onSaved }: Pr
       setSaving(false);
     }
   };
+
+  const thumb = previewUrl ?? product?.thumbnailUrl ?? null;
 
   return (
     <Modal
@@ -103,33 +121,37 @@ export default function ProductFormModal({ open, product, onClose, onSaved }: Pr
             ]}
           />
         </Form.Item>
-        {product && (
-          <Form.Item label="缩略图">
-            <Upload
-              accept="image/*"
-              maxCount={1}
-              showUploadList={false}
-              beforeUpload={(file) => {
-                void uploadThumbnail(product.id, file)
-                  .then(() => {
-                    message.success("图片已上传");
-                    onSaved();
-                  })
-                  .catch((err: unknown) => message.error(errText(err)));
-                return false;
+        <Form.Item label="缩略图">
+          <Upload
+            accept="image/*"
+            maxCount={1}
+            showUploadList={false}
+            beforeUpload={(file) => {
+              setPendingFile(file);
+              return false; // 不立即上传，保存时再传
+            }}
+          >
+            <Button icon={<UploadOutlined />}>选择本地图片</Button>
+          </Upload>
+          {thumb ? (
+            <img
+              src={thumb}
+              alt=""
+              style={{
+                marginTop: 8,
+                width: 64,
+                height: 64,
+                objectFit: "cover",
+                borderRadius: 4,
               }}
-            >
-              <Button icon={<UploadOutlined />}>上传图片</Button>
-            </Upload>
-            {product.thumbnailUrl && (
-              <img
-                src={product.thumbnailUrl}
-                alt=""
-                style={{ marginTop: 8, width: 64, height: 64, objectFit: "cover" }}
-              />
-            )}
-          </Form.Item>
-        )}
+            />
+          ) : null}
+          {pendingFile ? (
+            <div style={{ marginTop: 4, fontSize: 12, color: "#888" }}>
+              {pendingFile.name}（保存后上传）
+            </div>
+          ) : null}
+        </Form.Item>
       </Form>
     </Modal>
   );
